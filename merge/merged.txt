@@ -1,0 +1,923 @@
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\package.json
+{
+  "name": "proyecto4",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "eslint": "^9.39.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "vite": "^7.2.4"
+  }
+}
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\index.html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>movie-app</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\App.css
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\App.jsx
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { FavoritesProvider } from './context/FavoritesContext';
+import { Navbar } from './components/Navbar';
+import { Home } from './pages/Home';
+import { Search } from './pages/Search';
+import { MovieDetail } from './pages/MovieDetail';
+import { Favorites } from './pages/Favorites';
+
+function App() {
+  return (
+    <FavoritesProvider>
+      <BrowserRouter>
+        <div className="app">
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/movie/:id" element={<MovieDetail />} />
+            <Route path="/favorites" element={<Favorites />} />
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </FavoritesProvider>
+  );
+}
+
+export default App;
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\components\Loader.jsx
+export const Loader = () => {
+  return (
+    <div className="loader-container">
+      <div className="loader"></div>
+      <p>Cargando películas...</p>
+    </div>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\components\MovieCard.jsx
+import { useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { FavoritesContext } from '../context/FavoritesContext';
+
+export const MovieCard = ({ movie }) => {
+  const { addFavorite, removeFavorite, isFavorite } = useContext(FavoritesContext);
+  const favorite = isFavorite(movie.id);
+
+  const handleFavoriteClick = (e) => {
+    e.preventDefault();
+    favorite ? removeFavorite(movie.id) : addFavorite(movie);
+  };
+
+  return (
+    <Link to={`/movie/${movie.id}`} className="movie-card">
+      <div className="movie-poster">
+        <img
+          src={movie.poster_path 
+            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+            : '/placeholder.png'
+          }
+          alt={movie.title}
+          loading="lazy"
+        />
+        <button 
+          className={`favorite-btn ${favorite ? 'active' : ''}`}
+          onClick={handleFavoriteClick}
+        >
+          {favorite ? '❤️' : '🤍'}
+        </button>
+      </div>
+      <div className="movie-info">
+        <h3>{movie.title}</h3>
+        <div className="movie-meta">
+          <span className="rating">⭐ {movie.vote_average.toFixed(1)}</span>
+          <span className="year">{movie.release_date?.split('-')[0]}</span>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\components\Navbar.jsx
+import { Link } from 'react-router-dom';
+import { useContext } from 'react';
+import { FavoritesContext } from '../context/FavoritesContext';
+
+export const Navbar = () => {
+  const { favorites } = useContext(FavoritesContext);
+
+  return (
+    <nav className="navbar">
+      <div className="container">
+        <Link to="/" className="logo">🎬 MovieApp</Link>
+        <ul className="nav-links">
+          <li><Link to="/">Inicio</Link></li>
+          <li><Link to="/search">Buscar</Link></li>
+          <li>
+            <Link to="/favorites">
+              Favoritos {favorites.length > 0 && `(${favorites.length})`}
+            </Link>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\components\SearchBar.jsx
+import { useRef } from 'react';
+
+export const SearchBar = ({ onSearch }) => {
+  const searchInputRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const query = searchInputRef.current.value.trim();
+    if (query) {
+      onSearch(query);
+    }
+  };
+
+  return (
+    <form className="search-bar" onSubmit={handleSubmit}>
+      <input
+        ref={searchInputRef}
+        type="text"
+        placeholder="Buscar películas..."
+        className="search-input"
+      />
+      <button type="submit" className="search-btn">
+        🔍 Buscar
+      </button>
+    </form>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\context\FavoritesContext.jsx
+import { createContext, useState, useEffect } from 'react';
+
+
+export const FavoritesContext = createContext();
+
+
+export const FavoritesProvider = ({ children }) => {
+  
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('movieFavorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error al cargar favoritos:', error);
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('movieFavorites', JSON.stringify(favorites));
+    } catch (error) {
+      console.error('Error al guardar favoritos:', error);
+    }
+  }, [favorites]);
+
+  const addFavorite = (movie) => {
+    setFavorites(prev => {
+      const exists = prev.find(fav => fav.id === movie.id);
+      if (exists) {
+        return prev;
+      }
+      return [...prev, movie];
+    });
+  };
+
+  const removeFavorite = (movieId) => {
+    setFavorites(prev => prev.filter(fav => fav.id !== movieId));
+  };
+
+  const isFavorite = (movieId) => {
+    return favorites.some(fav => fav.id === movieId);
+  };
+
+  const toggleFavorite = (movie) => {
+    if (isFavorite(movie.id)) {
+      removeFavorite(movie.id);
+    } else {
+      addFavorite(movie);
+    }
+  };
+
+  const value = {
+    favorites,
+    addFavorite,
+    removeFavorite,
+    isFavorite,
+    toggleFavorite
+  };
+
+  return (
+    <FavoritesContext.Provider value={value}>
+      {children}
+    </FavoritesContext.Provider>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\hooks\useMovies.js
+import { useState, useEffect } from "react";
+
+export const useMovies = (fetchFunction, dependency = null) => {
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchMovies = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchFunction();
+
+        if (isMounted) {
+          setMovies(data.results || []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err.message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMovies();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [dependency]);
+
+  return { movies, loading, error };
+};
+
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\index.css
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #e50914;
+  --secondary: #141414;
+  --text: #ffffff;
+  --text-gray: #b3b3b3;
+  --bg-dark: #000000;
+  --bg-card: #1f1f1f;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--secondary);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.navbar {
+  background-color: var(--bg-dark);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.navbar .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 2rem;
+}
+
+.nav-links a {
+  color: var(--text);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.nav-links a:hover {
+  color: var(--primary);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.page {
+  min-height: calc(100vh - 80px);
+  padding-top: 2rem;
+}
+
+h1 {
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+.movies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 2rem;
+}
+
+.movie-card {
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  text-decoration: none;
+  color: var(--text);
+  position: relative;
+}
+
+.movie-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(229, 9, 20, 0.3);
+}
+
+.movie-poster {
+  position: relative;
+  width: 100%;
+  padding-top: 150%;
+  overflow: hidden;
+}
+
+.movie-poster img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.favorite-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+  z-index: 10;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.1);
+}
+
+.favorite-btn.active {
+  background: rgba(229, 9, 20, 0.8);
+}
+
+.movie-info {
+  padding: 1rem;
+}
+
+.movie-info h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.movie-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-gray);
+  font-size: 0.9rem;
+}
+
+.search-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  max-width: 600px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--bg-card);
+  border-radius: 4px;
+  background-color: var(--bg-card);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.search-btn {
+  padding: 0.8rem 2rem;
+  background-color: var(--primary);
+  color: var(--text);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.search-btn:hover {
+  background-color: #c40812;
+}
+
+.movie-detail-page {
+  padding: 2rem 1rem;
+}
+
+.back-btn {
+  background: var(--bg-card);
+  color: var(--text);
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.back-btn:hover {
+  background: var(--primary);
+}
+
+.movie-detail {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.movie-poster-large img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.movie-content h1 {
+  margin-bottom: 1rem;
+}
+
+.movie-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-gray);
+}
+
+.favorite-btn-large {
+  padding: 1rem 2rem;
+  background-color: var(--primary);
+  color: var(--text);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  transition: background-color 0.3s;
+}
+
+.favorite-btn-large:hover {
+  background-color: #c40812;
+}
+
+.favorite-btn-large.active {
+  background-color: #28a745;
+}
+
+.genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.genre-tag {
+  background-color: var(--bg-card);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.overview {
+  color: var(--text-gray);
+  line-height: 1.8;
+}
+
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loader {
+  border: 4px solid var(--bg-card);
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-gray);
+}
+
+.empty-state p {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.no-results {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-gray);
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    gap: 1rem;
+  }
+  
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+  
+  .movie-detail {
+    grid-template-columns: 1fr;
+  }
+  
+  .search-bar {
+    flex-direction: column;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar .container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .movies-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\main.jsx
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\pages\Favorites.jsx
+import { useContext } from 'react';
+import { FavoritesContext } from '../context/FavoritesContext';
+import { MovieCard } from '../components/MovieCard';
+
+export const Favorites = () => {
+  const { favorites } = useContext(FavoritesContext);
+
+  return (
+    <div className="page">
+      <div className="container">
+        <h1>Mis Favoritos</h1>
+        
+        {favorites.length === 0 ? (
+          <div className="empty-state">
+            <p>No tienes películas favoritas aún</p>
+            <p>Explora y agrega tus películas favoritas ❤️</p>
+          </div>
+        ) : (
+          <div className="movies-grid">
+            {favorites.map(movie => (
+              <MovieCard key={movie.id} movie={movie} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\pages\Home.jsx
+import { movieService } from '../services/movieService';
+import { useMovies } from '../hooks/useMovies';
+import { MovieCard } from '../components/MovieCard';
+import { Loader } from '../components/Loader';
+
+export const Home = () => {
+  const { movies, loading, error } = useMovies(() => 
+    movieService.getPopularMovies()
+  );
+
+  if (loading) return <Loader />;
+  if (error) return <div className="error">Error: {error}</div>;
+
+  return (
+    <div className="page">
+      <div className="container">
+        <h1>Películas Populares</h1>
+        <div className="movies-grid">
+          {movies.map(movie => (
+            <MovieCard key={movie.id} movie={movie} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\pages\MovieDetail.jsx
+import { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { movieService } from '../services/movieService';
+import { FavoritesContext } from '../context/FavoritesContext';
+import { Loader } from '../components/Loader';
+
+export const MovieDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [movie, setMovie] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { addFavorite, removeFavorite, isFavorite } = useContext(FavoritesContext);
+
+  useEffect(() => {
+    const fetchMovie = async () => {
+      try {
+        setLoading(true);
+        const data = await movieService.getMovieDetails(id);
+        setMovie(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMovie();
+  }, [id]);
+
+  if (loading) return <Loader />;
+  if (!movie) return <div>Película no encontrada</div>;
+
+  const favorite = isFavorite(movie.id);
+
+  return (
+    <div className="page movie-detail-page">
+      <button onClick={() => navigate(-1)} className="back-btn">
+        ← Volver
+      </button>
+      
+      <div className="movie-detail">
+        <div className="movie-poster-large">
+          <img
+            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+            alt={movie.title}
+          />
+        </div>
+        
+        <div className="movie-content">
+          <h1>{movie.title}</h1>
+          <div className="movie-stats">
+            <span className="rating">⭐ {movie.vote_average.toFixed(1)}</span>
+            <span className="year">{movie.release_date?.split('-')[0]}</span>
+            <span className="runtime">{movie.runtime} min</span>
+          </div>
+          
+          <button 
+            onClick={() => favorite ? removeFavorite(movie.id) : addFavorite(movie)}
+            className={`favorite-btn-large ${favorite ? 'active' : ''}`}
+          >
+            {favorite ? '❤️ Eliminar de favoritos' : '🤍 Agregar a favoritos'}
+          </button>
+          
+          <div className="genres">
+            {movie.genres?.map(genre => (
+              <span key={genre.id} className="genre-tag">{genre.name}</span>
+            ))}
+          </div>
+          
+          <h2>Sinopsis</h2>
+          <p className="overview">{movie.overview}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\pages\Search.jsx
+import { useState } from 'react';
+import { movieService } from '../services/movieService';
+import { SearchBar } from '../components/SearchBar';
+import { MovieCard } from '../components/MovieCard';
+import { Loader } from '../components/Loader';
+
+export const Search = () => {
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+
+  const handleSearch = async (query) => {
+    setLoading(true);
+    setSearched(true);
+    try {
+      const data = await movieService.searchMovies(query);
+      setMovies(data.results);
+    } catch (error) {
+      console.error(error);
+      setMovies([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page">
+      <div className="container">
+        <h1>Buscar Películas</h1>
+        <SearchBar onSearch={handleSearch} />
+        
+        {loading && <Loader />}
+        
+        {!loading && searched && movies.length === 0 && (
+          <p className="no-results">No se encontraron resultados</p>
+        )}
+        
+        {!loading && movies.length > 0 && (
+          <div className="movies-grid">
+            {movies.map(movie => (
+              <MovieCard key={movie.id} movie={movie} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// File: c:\Users\gabi_\Desktop\prConBracho\proyecto4 - copia\src\services\movieService.js
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const BASE_URL = "https://api.themoviedb.org/3";
+
+export const movieService = {
+  getPopularMovies: async (page = 1) => {
+    const response = await fetch(
+      `${BASE_URL}/movie/popular?api_key=${API_KEY}&language=es-ES&page=${page}`
+    );
+    if (!response.ok) throw new Error("Error al obtener películas");
+    return response.json();
+  },
+
+  searchMovies: async (query, page = 1) => {
+    const response = await fetch(
+      `${BASE_URL}/search/movie?api_key=${API_KEY}&language=es-ES&query=${query}&page=${page}`
+    );
+    if (!response.ok) throw new Error("Error en la búsqueda");
+    return response.json();
+  },
+
+  getMovieDetails: async (id) => {
+    const response = await fetch(
+      `${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=es-ES`
+    );
+    if (!response.ok) throw new Error("Error al obtener detalles");
+    return response.json();
+  },
+};
+
+
