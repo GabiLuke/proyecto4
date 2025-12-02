@@ -24,6 +24,6 @@ cd proyecto4
 Instala las dependencias:npm install
 Configura la API Key: Necesitas una clave de la API de TMDB. 
 Crea un archivo .env en la raíz del proyecto y pon tu clave:
-VITE_TMDB_API_KEY=15c7fa00c79790583b3c1eca608ebd14
+VITE_TMDB_API_KEY=
 Inicia el proyecto: npm run dev
 Se abrirá en http://localhost:5173
